@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ADAM">
+<title>ADAM — AI Sports Dashboard</title>
+<style>
+:root{
+  --bg:#0b0e14;
+  --panel:#131722;
+  --panel-2:#1a1f2e;
+  --line:#242b3d;
+  --text:#e8ecf4;
+  --text-dim:#8893a8;
+  --accent:#ff8a3d;
+  --accent-2:#ffb673;
+  --value:#3ddc84;
+  --avoid:#ff5c6c;
+  --ok:#ffd23d;
+  --mono:'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --sans:-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  width:100%;
+  overflow-x:hidden;
+}
+body{padding-bottom:90px;}
+
+/* ── HEADER ── */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  background:linear-gradient(180deg, var(--bg) 70%, transparent);
+  backdrop-filter:blur(12px);
+  padding:14px 16px 8px;
+}
+.brand{
+  display:flex; align-items:baseline; gap:8px;
+}
+.brand .logo{
+  font-family:var(--mono);
+  font-weight:800;
+  font-size:22px;
+  letter-spacing:0.5px;
+  background:linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.brand .tag{
+  font-size:11px;
+  color:var(--text-dim);
+  font-family:var(--mono);
+}
+.statusline{
+  font-size:12px;
+  color:var(--text-dim);
+  margin-top:6px;
+  font-family:var(--mono);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* ── CONTROLS ── */
+.controls{
+  padding:10px 16px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.row{display:flex; gap:8px; align-items:center;}
+.sport-tabs{
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  padding-bottom:2px;
+  -webkit-overflow-scrolling:touch;
+}
+.sport-tabs::-webkit-scrollbar{display:none;}
+.tab{
+  flex:0 0 auto;
+  padding:8px 14px;
+  border-radius:20px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  color:var(--text-dim);
+  font-size:13px;
+  font-weight:600;
+  white-space:nowrap;
+}
+.tab.active{
+  background:var(--accent);
+  color:#1a0f05;
+  border-color:var(--accent);
+}
+.date-row{
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+.date-row input[type=date]{
+  flex:1;
+  background:var(--panel);
+  border:1px solid var(--line);
+  color:var(--text);
+  padding:9px 10px;
+  border-radius:10px;
+  font-size:14px;
+  font-family:var(--mono);
+}
+.icon-btn{
+  background:var(--panel);
+  border:1px solid var(--line);
+  color:var(--text);
+  width:38px; height:38px;
+  border-radius:10px;
+  font-size:16px;
+  display:flex; align-items:center; justify-content:center;
+}
+.icon-btn:active{background:var(--panel-2);}
+
+.action-row{display:flex; gap:8px;}
+.btn{
+  flex:1;
+  padding:11px 8px;
+  border-radius:10px;
+  border:none;
+  font-weight:700;
+  font-size:13px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.btn-primary{
+  background:linear-gradient(135deg, var(--accent), #e8651a);
+  color:#1a0f05;
+}
+.btn-secondary{
+  background:var(--panel);
+  color:var(--text);
+  border:1px solid var(--line);
+}
+.btn:active{transform:scale(0.97);}
+.btn.loading{opacity:0.6; pointer-events:none;}
+
+.toggle-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:4px 2px;
+}
+.toggle-label{font-size:13px; color:var(--text-dim); display:flex; gap:8px; align-items:center;}
+.switch{
+  width:38px; height:22px;
+  background:var(--panel-2);
+  border-radius:20px;
+  position:relative;
+  border:1px solid var(--line);
+}
+.switch.on{background:var(--accent);}
+.switch::after{
+  content:'';
+  position:absolute; top:2px; left:2px;
+  width:16px; height:16px;
+  background:#fff;
+  border-radius:50%;
+  transition:left 0.15s;
+}
+.switch.on::after{left:18px;}
+
+/* ── BILETE ── */
+.tickets{
+  padding:10px 16px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.ticket{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 14px;
+}
+.ticket-head{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:8px;
+}
+.ticket-dot{width:8px; height:8px; border-radius:50%;}
+.dot-safe{background:var(--value);}
+.dot-value{background:var(--accent);}
+.dot-aggr{background:var(--avoid);}
+.ticket-title{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim);}
+.ticket-empty{font-size:12px; color:var(--text-dim); font-style:italic;}
+.ticket-item{
+  font-size:13px;
+  padding:6px 0;
+  border-top:1px solid var(--line);
+  line-height:1.4;
+}
+.ticket-item:first-of-type{border-top:none;}
+.ticket-item .match{font-weight:600; color:var(--text);}
+.ticket-item .pick{color:var(--accent-2); font-family:var(--mono); font-size:12px;}
+.ticket-item .ai-badge{
+  float:right;
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:700;
+  color:var(--value);
+}
+
+/* ── MATCH CARDS ── */
+.section-label{
+  padding:14px 16px 6px;
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  color:var(--text-dim);
+  font-family:var(--mono);
+}
+.matches{
+  padding:0 16px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.match-card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 14px;
+  position:relative;
+  overflow:hidden;
+}
+.match-card::before{
+  content:'';
+  position:absolute; left:0; top:0; bottom:0;
+  width:3px;
+}
+.match-card.v-value::before{background:var(--value);}
+.match-card.v-ok::before{background:var(--ok);}
+.match-card.v-avoid::before{background:var(--avoid); opacity:0.5;}
+.match-card.v-noodds::before{background:var(--text-dim); opacity:0.3;}
+
+.match-card.v-avoid{opacity:0.55;}
+
+.mc-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:8px;
+}
+.mc-teams{font-size:14px; font-weight:700; line-height:1.3;}
+.mc-league{font-size:11px; color:var(--text-dim); margin-top:2px;}
+.mc-time{font-size:11px; color:var(--text-dim); font-family:var(--mono); white-space:nowrap;}
+
+.mc-mid{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+}
+.ai-circle{
+  width:44px; height:44px;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono);
+  font-weight:800;
+  font-size:14px;
+  flex:0 0 auto;
+  border:2px solid;
+}
+.ai-circle.hi{border-color:var(--value); color:var(--value);}
+.ai-circle.mid{border-color:var(--ok); color:var(--ok);}
+.ai-circle.lo{border-color:var(--avoid); color:var(--avoid);}
+
+.mc-pick{flex:1; min-width:0;}
+.mc-pick .sel{font-size:13px; font-weight:600; color:var(--text);}
+.mc-pick .verdict-badge{
+  display:inline-block;
+  font-size:10px;
+  font-weight:800;
+  padding:2px 7px;
+  border-radius:6px;
+  margin-top:4px;
+  font-family:var(--mono);
+}
+.vb-value{background:rgba(61,220,132,0.15); color:var(--value);}
+.vb-ok{background:rgba(255,210,61,0.15); color:var(--ok);}
+.vb-avoid{background:rgba(255,92,108,0.15); color:var(--avoid);}
+.vb-noodds{background:rgba(136,147,168,0.15); color:var(--text-dim);}
+
+.mc-odds{
+  display:flex;
+  gap:6px;
+  margin-top:10px;
+  font-family:var(--mono);
+  font-size:12px;
+}
+.odd-chip{
+  flex:1;
+  text-align:center;
+  background:var(--panel-2);
+  border-radius:8px;
+  padding:6px 4px;
+  color:var(--text-dim);
+}
+.odd-chip b{color:var(--text); display:block; font-size:13px;}
+
+.mc-detail{
+  margin-top:8px;
+  padding-top:8px;
+  border-top:1px solid var(--line);
+  font-size:11px;
+  color:var(--text-dim);
+  display:none;
+  line-height:1.5;
+}
+.match-card.expanded .mc-detail{display:block;}
+
+.live-tag{
+  display:inline-block;
+  font-size:10px;
+  font-weight:800;
+  padding:2px 6px;
+  border-radius:5px;
+  background:rgba(255,92,108,0.2);
+  color:var(--avoid);
+  margin-left:6px;
+}
+
+.empty-state{
+  padding:60px 24px;
+  text-align:center;
+  color:var(--text-dim);
+}
+.empty-state .icon{font-size:40px; margin-bottom:12px; opacity:0.5;}
+.empty-state .msg{font-size:14px; line-height:1.5;}
+
+/* ── BOTTOM BAR ── */
+.bottombar{
+  position:fixed;
+  bottom:0; left:0; right:0;
+  background:rgba(19,23,34,0.92);
+  backdrop-filter:blur(16px);
+  border-top:1px solid var(--line);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+  display:flex;
+  gap:8px;
+  z-index:60;
+}
+
+.toast{
+  position:fixed;
+  bottom:90px; left:50%;
+  transform:translateX(-50%);
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  color:var(--text);
+  padding:10px 18px;
+  border-radius:10px;
+  font-size:13px;
+  z-index:100;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.2s;
+  max-width:90vw;
+  text-align:center;
+}
+.toast.show{opacity:1;}
+.toast.err{border-color:var(--avoid); color:var(--avoid);}
+
+.spinner{
+  width:14px; height:14px;
+  border:2px solid rgba(255,255,255,0.3);
+  border-top-color:#1a0f05;
+  border-radius:50%;
+  animation:spin 0.6s linear infinite;
+  display:none;
+}
+.btn.loading .spinner{display:inline-block;}
+.btn.loading .btn-text{display:none;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="logo">ADAM</span>
+    <span class="tag">AI Sports Dashboard</span>
+  </div>
+  <div class="statusline" id="statusline">Apasă UPDATE pentru a începe.</div>
+</div>
+
+<div class="controls">
+  <div class="sport-tabs" id="sportTabs">
+    <button class="tab active" data-sport="football">⚽ Fotbal</button>
+    <button class="tab" data-sport="handball">🤾 Handbal</button>
+    <button class="tab" data-sport="basketball">🏀 Baschet</button>
+    <button class="tab" data-sport="tennis">🎾 Tenis</button>
+  </div>
+
+  <div class="date-row">
+    <button class="icon-btn" id="prevDay">‹</button>
+    <input type="date" id="dateInput">
+    <button class="icon-btn" id="nextDay">›</button>
+    <button class="icon-btn" id="todayBtn">●</button>
+  </div>
+
+  <div class="toggle-row">
+    <span class="toggle-label">Toate ligile (inclusiv mici)</span>
+    <div class="switch on" id="showAllSwitch"></div>
+  </div>
+</div>
+
+<div class="tickets" id="tickets">
+  <div class="ticket">
+    <div class="ticket-head"><span class="ticket-dot dot-safe"></span><span class="ticket-title">Bilet Safe</span></div>
+    <div id="ticketSafe"><div class="ticket-empty">Fără date încă.</div></div>
+  </div>
+  <div class="ticket">
+    <div class="ticket-head"><span class="ticket-dot dot-value"></span><span class="ticket-title">Bilet Value</span></div>
+    <div id="ticketValue"><div class="ticket-empty">Fără date încă.</div></div>
+  </div>
+  <div class="ticket">
+    <div class="ticket-head"><span class="ticket-dot dot-aggr"></span><span class="ticket-title">Bilet Agresiv</span></div>
+    <div id="ticketAggr"><div class="ticket-empty">Fără date încă.</div></div>
+  </div>
+</div>
+
+<div class="section-label" id="matchesLabel">Meciuri</div>
+<div class="matches" id="matches">
+  <div class="empty-state">
+    <div class="icon">⚡</div>
+    <div class="msg">Apasă <b>UPDATE</b> ca să aduci meciurile zilei și predicțiile AI.</div>
+  </div>
+</div>
+
+<div class="bottombar">
+  <button class="btn btn-primary" id="updateBtn">
+    <span class="spinner"></span>
+    <span class="btn-text">🔄 UPDATE</span>
+  </button>
+  <button class="btn btn-secondary" id="backfillBtn">
+    <span class="spinner"></span>
+    <span class="btn-text">📥 Backfill</span>
+  </button>
+  <button class="btn btn-secondary" id="exportBtn">
+    <span class="btn-text">⬇ CSV</span>
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const state = { sport: "football", date: "", showAll: true, rows: [] };
+
+function todayStr(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+state.date = todayStr();
+document.getElementById("dateInput").value = state.date;
+
+function showToast(msg, isErr){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (isErr ? " err" : "");
+  setTimeout(()=> t.className = "toast", 3000);
+}
+
+function setLoading(btnId, on){
+  document.getElementById(btnId).classList.toggle("loading", on);
+}
+
+// ── Sport tabs ──
+document.getElementById("sportTabs").addEventListener("click", (e)=>{
+  const tab = e.target.closest(".tab");
+  if(!tab) return;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  tab.classList.add("active");
+  state.sport = tab.dataset.sport;
+});
+
+// ── Date nav ──
+document.getElementById("prevDay").onclick = ()=>{
+  const d = new Date(state.date);
+  d.setDate(d.getDate()-1);
+  state.date = d.toISOString().slice(0,10);
+  document.getElementById("dateInput").value = state.date;
+};
+document.getElementById("nextDay").onclick = ()=>{
+  const d = new Date(state.date);
+  d.setDate(d.getDate()+1);
+  state.date = d.toISOString().slice(0,10);
+  document.getElementById("dateInput").value = state.date;
+};
+document.getElementById("todayBtn").onclick = ()=>{
+  state.date = todayStr();
+  document.getElementById("dateInput").value = state.date;
+};
+document.getElementById("dateInput").addEventListener("change", (e)=>{
+  state.date = e.target.value;
+});
+
+// ── Toggle ──
+document.getElementById("showAllSwitch").onclick = (e)=>{
+  e.target.classList.toggle("on");
+  state.showAll = e.target.classList.contains("on");
+};
+
+// ── Render ──
+function aiClass(ai){
+  if(ai >= 72) return "hi";
+  if(ai >= 58) return "mid";
+  return "lo";
+}
+function verdictClass(v){
+  if(v === "VALUE") return "value";
+  if(v === "OK") return "ok";
+  if(v === "NO ODDS") return "noodds";
+  return "avoid";
+}
+
+function renderMatches(rows){
+  const el = document.getElementById("matches");
+  document.getElementById("matchesLabel").textContent = `Meciuri (${rows.length})`;
+  if(!rows.length){
+    el.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><div class="msg">Niciun meci găsit pentru data și sportul selectat.</div></div>`;
+    return;
+  }
+  el.innerHTML = rows.map((r, i)=>{
+    const vc = verdictClass(r.Verdict);
+    const ac = aiClass(r.AIConfidence);
+    const live = (r.LiveFlag && r.LiveFlag !== "-" && r.LiveFlag !== "LIVE OK")
+      ? `<span class="live-tag">${r.LiveFlag}</span>` : "";
+    return `
+    <div class="match-card v-${vc}" data-idx="${i}">
+      <div class="mc-top">
+        <div>
+          <div class="mc-teams">${r.Meci}${live}</div>
+          <div class="mc-league">${r.Liga}</div>
+        </div>
+        <div class="mc-time">${r.Ora || ""}</div>
+      </div>
+      <div class="mc-mid">
+        <div class="ai-circle ${ac}">${r.AIConfidence}</div>
+        <div class="mc-pick">
+          <div class="sel">${r.SelectieFinala}</div>
+          <span class="verdict-badge vb-${vc}">${r.Verdict}</span>
+        </div>
+      </div>
+      <div class="mc-odds">
+        <div class="odd-chip">1<b>${r.Cota1}</b></div>
+        <div class="odd-chip">X<b>${r.CotaX}</b></div>
+        <div class="odd-chip">2<b>${r.Cota2}</b></div>
+      </div>
+      <div class="mc-detail">
+        ${r.Motiv}<br>
+        Scor estimat: ${r.ScorCorect} · Risc: ${r.RiscFinal}<br>
+        ${r.ValueScore !== "-" ? r.ValueScore : ""}
+      </div>
+    </div>`;
+  }).join("");
+
+  el.querySelectorAll(".match-card").forEach(card=>{
+    card.addEventListener("click", ()=> card.classList.toggle("expanded"));
+  });
+}
+
+function renderTickets(rows){
+  const safe = rows.filter(r => r.AIConfidence >= 72 && !["EVITA LIVE","RITM MIC","PACE MIC"].includes(r.LiveFlag)).slice(0,3);
+  const value = rows.filter(r => r.Verdict === "VALUE").slice(0,3);
+  const aggr = rows.filter(r => r.AIConfidence >= 60 && r.AIConfidence < 72 && r.Verdict !== "AVOID").slice(0,3);
+
+  function ticketHtml(list){
+    if(!list.length) return `<div class="ticket-empty">Niciun meci calificat azi.</div>`;
+    return list.map(r => `
+      <div class="ticket-item">
+        <span class="ai-badge">AI ${r.AIConfidence}</span>
+        <div class="match">${r.Meci}</div>
+        <div class="pick">${r.PariuExact || r.SelectieFinala}</div>
+      </div>`).join("");
+  }
+  document.getElementById("ticketSafe").innerHTML = ticketHtml(safe);
+  document.getElementById("ticketValue").innerHTML = ticketHtml(value);
+  document.getElementById("ticketAggr").innerHTML = ticketHtml(aggr);
+}
+
+// ── API calls ──
+async function doUpdate(){
+  setLoading("updateBtn", true);
+  document.getElementById("statusline").textContent = "Se actualizează...";
+  try{
+    const res = await fetch("/api/update", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({sport: state.sport, date: state.date, show_all: state.showAll})
+    });
+    const data = await res.json();
+    if(!data.ok){ throw new Error(data.error || "Eroare necunoscută"); }
+    state.rows = data.rows;
+    renderMatches(data.rows);
+    renderTickets(data.rows);
+    const m = data.meta;
+    document.getElementById("statusline").textContent =
+      `${state.sport} | API ${m.total} | afișate ${m.shown}` + (m.odds ? ` | cote ${m.odds}` : "");
+    showToast(`✓ ${data.rows.length} meciuri actualizate`);
+  }catch(e){
+    document.getElementById("statusline").textContent = "Eroare la actualizare.";
+    showToast("Eroare: " + e.message, true);
+  }finally{
+    setLoading("updateBtn", false);
+  }
+}
+
+async function doBackfill(){
+  setLoading("backfillBtn", true);
+  document.getElementById("statusline").textContent = "Backfill în curs...";
+  try{
+    const res = await fetch("/api/backfill", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({sport: state.sport, date: state.date})
+    });
+    const data = await res.json();
+    showToast(data.ok ? `✓ Backfill: ${data.ok_count} zile OK` : "Backfill: nicio zi disponibilă", !data.ok);
+    document.getElementById("statusline").textContent = "Backfill terminat. Apasă UPDATE.";
+  }catch(e){
+    showToast("Eroare backfill: " + e.message, true);
+  }finally{
+    setLoading("backfillBtn", false);
+  }
+}
+
+function doExport(){
+  window.location.href = "/api/export.csv";
+}
+
+document.getElementById("updateBtn").onclick = doUpdate;
+document.getElementById("backfillBtn").onclick = doBackfill;
+document.getElementById("exportBtn").onclick = doExport;
+</script>
+
+</body>
+</html>
