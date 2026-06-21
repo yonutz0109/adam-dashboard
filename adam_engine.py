@@ -585,17 +585,20 @@ def team_form(db_file, api_key, sport, team_id):
     return api_form(api_key, sport, team_id)
 
 
+import time
+
 def api_sports_odds_map(api_key, sport, date_str, progress=None):
     meta = SPORTS_API[sport]
     all_items = []
-    for p in range(1, 9):
+    for p in range(1, 3):  # max 2 pagini (era 8) — reduce drastic requests
         if progress:
-            progress(f"{sport}: cote pagina {p}/8")
+            progress(f"{sport}: cote pagina {p}/2")
         try:
             payload = api_sports_get(f"{meta['host']}{meta['odds']}?date={date_str}&page={p}", api_key)
             all_items.extend(payload.get("response", []))
+            time.sleep(0.3)
         except Exception:
-            pass
+            break
     odds = {}
     for item in all_items:
         fid = str(safe_get(item, ["fixture", "id"], safe_get(item, ["game", "id"], "")))
@@ -629,6 +632,8 @@ def fetch_api_sports(db_file, api_key, sport, date_str, show_all, progress=None)
     rows = []
     form_cache = {}
     skipped_bad = skipped_filter = 0
+    api_calls_for_form = 0
+    MAX_FORM_API_CALLS = 15  # limită dură: max 15 requests de formă per UPDATE
 
     for fx in items:
         league = safe_get(fx, ["league", "name"], "")
@@ -667,9 +672,18 @@ def fetch_api_sports(db_file, api_key, sport, date_str, show_all, progress=None)
 
         for tid, name in [(hid, hname), (aid, aname)]:
             if tid not in form_cache:
-                if progress:
-                    progress(f"{sport}: formă {name}")
-                form_cache[tid] = team_form(db_file, api_key, sport, tid)
+                # DB local întâi (gratuit, fără request) — dacă nu există, API doar dacă mai avem buget
+                s, n = db_form(db_file, sport, tid)
+                if s != 50:
+                    form_cache[tid] = (s, n)
+                elif api_calls_for_form < MAX_FORM_API_CALLS:
+                    if progress:
+                        progress(f"{sport}: formă {name} ({api_calls_for_form+1}/{MAX_FORM_API_CALLS})")
+                    form_cache[tid] = api_form(api_key, sport, tid)
+                    api_calls_for_form += 1
+                    time.sleep(0.25)
+                else:
+                    form_cache[tid] = (50, "limită API atinsă")
 
         hf, hnote = form_cache.get(hid, (50, "no"))
         af, anote = form_cache.get(aid, (50, "no"))
@@ -677,7 +691,9 @@ def fetch_api_sports(db_file, api_key, sport, date_str, show_all, progress=None)
                               status, elapsed, gh, ga, c1, cx, c2, hf, af, hnote, anote,
                               learn_adj, learn_note))
 
-    return rows, {"total": len(items), "bad": skipped_bad, "filtered": skipped_filter, "odds": len(odds)}
+    total_calls = 1 + min(2, len(range(1,3))) + api_calls_for_form
+    return rows, {"total": len(items), "bad": skipped_bad, "filtered": skipped_filter,
+                  "odds": len(odds), "api_calls": total_calls}
 
 
 def fetch_tennis(db_file, odds_key, date_str, show_all, progress=None):
