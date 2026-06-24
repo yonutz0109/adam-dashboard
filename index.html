@@ -567,9 +567,11 @@ function renderMatches(rows){
         <div class="odd-chip">2<b>${r.Cota2}</b></div>
       </div>
       <div class="mc-detail">
-        ${r.Motiv}<br>
-        Scor estimat: ${r.ScorCorect} · Risc: ${r.RiscFinal}<br>
-        ${r.ValueScore !== "-" ? r.ValueScore : ""}
+        <b>Motiv:</b> ${r.Motiv}<br>
+        <b>Scor estimat:</b> ${r.ScorCorect} &nbsp;·&nbsp; <b>Risc:</b> ${r.RiscFinal}<br>
+        ${r.ValueScore !== "-" ? `<b>Value:</b> ${r.ValueScore}<br>` : ""}
+        ${r.ExtraInfo ? r.ExtraInfo.split(" || ").map(x=>`<span style="color:var(--accent-2)">▸</span> ${x}`).join("<br>") : ""}
+        <div style="font-size:10px;margin-top:4px;color:var(--text-dim)">${r.NoteAI || ""}</div>
       </div>
     </div>`;
   }).join("");

@@ -26,6 +26,7 @@ def get_keys():
     return {
         "api_sports": os.environ.get("API_SPORTS_KEY", ""),
         "odds": os.environ.get("ODDS_API_KEY", ""),
+        "fd": os.environ.get("FD_KEY", ""),
     }
 
 
@@ -45,7 +46,7 @@ def api_update():
     try:
         rows, meta = eng.fetch_dashboard(
             str(DB_FILE), keys["api_sports"], keys["odds"],
-            sport, date_str, show_all
+            sport, date_str, show_all, fd_key=keys["fd"]
         )
         LAST_RESULTS["rows"] = rows
         LAST_RESULTS["meta"] = meta
@@ -75,7 +76,7 @@ def api_backfill():
 
     for d in dates:
         try:
-            eng.fetch_dashboard(str(DB_FILE), keys["api_sports"], keys["odds"], sport, d, True)
+            eng.fetch_dashboard(str(DB_FILE), keys["api_sports"], keys["odds"], sport, d, True, fd_key=keys["fd"])
             ok_count += 1
         except Exception as e:
             err_count += 1
